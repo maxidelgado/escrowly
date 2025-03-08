@@ -3,20 +3,16 @@
 import { useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletButton } from '../solana/solana-provider';
-import { AppHero, ellipsify } from '../ui/ui-layout';
-import { ExplorerLink } from '../cluster/cluster-ui';
-import { EscrowlyCreate, EscrowlyList } from './escrowly-ui';
-import { useEscrowlyProgram } from './escrowly-data-access';
+import { AppHero } from '../ui/ui-layout';
+import { EscrowCreate } from './escrow';
 
-export default function EscrowlyFeature() {
+export default function Initialize() {
   const { publicKey } = useWallet();
-  const { programId } = useEscrowlyProgram();
-
-  // Local state for addresses provided via textboxes.
   const [mint, setMint] = useState('');
   const [intermediary, setIntermediary] = useState('');
   const [receiver, setReceiver] = useState('');
   const [addressesSet, setAddressesSet] = useState(false);
+  const [amount, setAmount] = useState(0);
 
   const handleSetAddresses = (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,11 +35,10 @@ export default function EscrowlyFeature() {
     );
   }
 
-  // If addresses have not been set, show a form for user input.
   if (!addressesSet) {
     return (
       <div className="max-w-xl mx-auto mt-8">
-        <h2 className="text-2xl mb-4">Enter Escrow Addresses</h2>
+        <h2 className="text-2xl mb-4">Sender: Enter Escrow Details</h2>
         <form onSubmit={handleSetAddresses} className="space-y-4">
           <div>
             <label htmlFor="mint" className="block mb-1">
@@ -84,8 +79,21 @@ export default function EscrowlyFeature() {
               placeholder="Enter receiver address"
             />
           </div>
+          <div>
+            <label htmlFor="amount" className="block mb-1">
+             Amount 
+            </label>
+            <input
+              type="number"
+              id="amount"
+              value={amount}
+              onChange={(e) => setAmount(Number(e.target.value))}
+              className="input input-bordered w-full"
+              placeholder="Enter amount"
+            />
+          </div>
           <button type="submit" className="btn btn-primary">
-            Set Addresses
+            Initialize 
           </button>
         </form>
       </div>
@@ -93,20 +101,14 @@ export default function EscrowlyFeature() {
   }
 
   return (
-    <div>
+    <div className="max-w-4xl mx-auto mt-8">
       <AppHero
-        title="Escrowly"
-        subtitle="Manage your escrows: create a new escrow, confirm participation, release funds, or cancel an escrow."
-      >
-        <p className="mb-6">
-          <ExplorerLink
-            path={`account/${programId.toString()}`}
-            label={ellipsify(programId.toString())}
-          />
-        </p>
-        <EscrowlyCreate mint={mint} intermediary={intermediary} receiver={receiver} />
-      </AppHero>
-      <EscrowlyList mint={mint} intermediary={intermediary} />
+        title="Sender Page"
+        subtitle="Initiate an escrow by providing the required details."
+      />
+      <div className="mt-6">
+        <EscrowCreate amount={amount} mint={mint} intermediary={intermediary} receiver={receiver} />
+      </div>
     </div>
   );
 }

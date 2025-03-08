@@ -17,7 +17,6 @@ import {
   getAssociatedTokenAddressSync,
   getMinimumBalanceForRentExemptMint,
 } from "@solana/spl-token";
-import { randomBytes } from "crypto";
 
 describe("escrow", () => {
   // 0. Set provider, connection and program.
@@ -36,63 +35,19 @@ describe("escrow", () => {
   const senderAta = getAssociatedTokenAddressSync(mint.publicKey, sender.publicKey);
   const intermediaryAta = getAssociatedTokenAddressSync(mint.publicKey, intermediary.publicKey);
 
-  // 3. Generate a u64 seed.
-  // Generate a random 8-byte Buffer and convert it to a BN in little-endian.
-  const seedBuffer = randomBytes(8);
-  const seedBN = new anchor.BN(seedBuffer, "le"); // ensure little-endian interpretation
-  // Derive the escrow PDA using the same seed buffer.
-  const [escrowPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("state"), seedBN.toArrayLike(Buffer, "le", 8)],
+  // 3. Derive escrow PDA.
+  const [escrowPDA] = anchor.web3.PublicKey.findProgramAddressSync(
+    [
+      Buffer.from("state"),
+      mint.publicKey.toBuffer(),
+      sender.publicKey.toBuffer(),
+      intermediary.publicKey.toBuffer(),
+      receiver.publicKey.toBuffer(),
+    ],
     program.programId
   );
-  // Derive the vault (an associated token account for the escrow PDA, using the mint).
-  const vault = getAssociatedTokenAddressSync(mint.publicKey, escrowPda, true);
 
-  // 4. Define accounts objects for the various instructions.
-
-  // Accounts used for initialization.
-  const initializeAccounts = {
-    sender: sender.publicKey,
-    intermediary: intermediary.publicKey,
-    receiver: receiver.publicKey,
-    mint: mint.publicKey,
-    senderAta: senderAta,
-    escrow: escrowPda,
-    vault: vault,
-    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-    tokenProgram: TOKEN_PROGRAM_ID,
-    systemProgram: SystemProgram.programId,
-  };
-
-  // For confirm instructions, the only required account is the escrow.
-  const confirmAccounts = {
-    escrow: escrowPda,
-  };
-
-  // For release, we need to supply a "caller" (the intermediary),
-  // plus an "intermediaryWallet" account.
-  const releaseAccounts = {
-    caller: intermediary.publicKey, // this is the signer calling release
-    escrow: escrowPda,
-    // intermediaryWallet is the destination for closing the vault.
-    intermediaryWallet: intermediary.publicKey,
-    vault: vault,
-    intermediaryAta: intermediaryAta,
-    mint: mint.publicKey,
-    tokenProgram: TOKEN_PROGRAM_ID,
-  };
-
-  // For cancel, the sender is attempting a refund.
-  const cancelAccounts = {
-    sender: sender.publicKey,
-    mint: mint.publicKey,
-    senderAta: senderAta,
-    escrow: escrowPda,
-    vault: vault,
-    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-    tokenProgram: TOKEN_PROGRAM_ID,
-    systemProgram: SystemProgram.programId,
-  };
+  const vault = getAssociatedTokenAddressSync(mint.publicKey, escrowPDA, true);
 
   const logTx = async (signature: string) => {
     console.log(
@@ -150,8 +105,19 @@ describe("escrow", () => {
     const senderAmount = 1e6;
     const deadline = Math.floor(Date.now() / 1000) + 60;
     await program.methods
-      .initialize(seedBN, new anchor.BN(senderAmount), new anchor.BN(deadline))
-      .accounts(initializeAccounts)
+      .initialize(new anchor.BN(senderAmount), new anchor.BN(deadline))
+      .accountsStrict({
+          sender: sender.publicKey,             // The sender who is cancelling.
+          intermediary: intermediary.publicKey, // The intermediary.
+          receiver: receiver.publicKey,         // The receiver.
+          mint: mint.publicKey,                 // The token mint.
+          senderAta: senderAta,                 // Sender's associated token account.
+          escrow: escrowPDA,                    // The escrow PDA derived with seeds: [b"state", mint, sender, intermediary, receiver]
+          vault: vault,                         // The vault holding the tokens.
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
       .signers([sender])
       .rpc()
       .then(logTx);
@@ -161,9 +127,9 @@ describe("escrow", () => {
     // Pass the enum as an object variant.
     await program.methods
       .confirm({ intermediary: {} })
-      .accounts({
-        ...confirmAccounts,
-        signer: intermediary.publicKey,
+      .accountsStrict({
+          escrow: escrowPDA,
+          signer: intermediary.publicKey, 
       })
       .signers([intermediary])
       .rpc()
@@ -173,9 +139,9 @@ describe("escrow", () => {
   it("Confirm escrow - receiver", async () => {
     await program.methods
       .confirm({ receiver: {} })
-      .accounts({
-        ...confirmAccounts,
-        signer: receiver.publicKey,
+      .accountsStrict({
+          escrow: escrowPDA,
+          signer: receiver.publicKey, 
       })
       .signers([receiver])
       .rpc()
@@ -186,7 +152,15 @@ describe("escrow", () => {
     // Either intermediary or receiver can call release. Here, intermediary calls.
     await program.methods
       .release()
-      .accounts(releaseAccounts)
+      .accountsStrict({
+        caller: intermediary.publicKey,          // Caller (must be intermediary or receiver)
+        escrow: escrowPDA,                        // The escrow PDA derived using [b"state", mint, sender, intermediary, receiver]
+        intermediaryWallet: intermediary.publicKey, // Used to receive any remaining lamports from closing the vault
+        vault: vault,                             // Vault token account holding escrowed tokens
+        intermediaryAta: intermediaryAta,         // Intermediary's associated token account for the mint
+        mint: mint.publicKey,                     // The token mint
+        tokenProgram: TOKEN_PROGRAM_ID,           // The SPL Token program
+      })
       .signers([intermediary])
       .rpc()
       .then(logTx);
@@ -197,7 +171,16 @@ describe("escrow", () => {
     try {
       await program.methods
         .cancel()
-        .accounts(cancelAccounts)
+        .accountsStrict({
+          sender: sender.publicKey,             // The sender who is cancelling.
+          mint: mint.publicKey,                 // The token mint.
+          senderAta: senderAta,                 // Sender's associated token account.
+          escrow: escrowPDA,                    // The escrow PDA derived with seeds: [b"state", mint, sender, intermediary, receiver]
+          vault: vault,                         // The vault holding the tokens.
+          associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+          tokenProgram: TOKEN_PROGRAM_ID,
+          systemProgram: SystemProgram.programId,
+        })
         .signers([sender])
         .rpc();
       throw new Error("Cancel should have failed because release was already initiated");

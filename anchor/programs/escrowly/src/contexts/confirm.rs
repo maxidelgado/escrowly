@@ -3,10 +3,21 @@ use crate::states::Escrow;
 
 #[derive(Accounts)]
 pub struct Confirm<'info> {
-    #[account(mut, seeds = [b"state", escrow.seed.to_le_bytes().as_ref()], bump = escrow.bump)]
-    pub escrow: Account<'info, Escrow>,
     // The signer must be either the intermediary or receiver.
     pub signer: Signer<'info>,
+
+    #[account(
+        mut, 
+        seeds = [
+            b"state",
+            escrow.mint.key().as_ref(),
+            escrow.sender.key().as_ref(),
+            escrow.intermediary.key().as_ref(),
+            escrow.receiver.key().as_ref(),
+        ], 
+        bump = escrow.bump
+    )]
+    pub escrow: Account<'info, Escrow>,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize)]

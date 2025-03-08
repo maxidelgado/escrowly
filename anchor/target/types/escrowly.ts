@@ -147,7 +147,22 @@ export type Escrowly = {
               },
               {
                 "kind": "account",
-                "path": "escrow.seed",
+                "path": "escrow.mint",
+                "account": "escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.sender",
+                "account": "escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.intermediary",
+                "account": "escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.receiver",
                 "account": "escrow"
               }
             ]
@@ -272,6 +287,10 @@ export type Escrowly = {
       ],
       "accounts": [
         {
+          "name": "signer",
+          "signer": true
+        },
+        {
           "name": "escrow",
           "writable": true,
           "pda": {
@@ -288,15 +307,26 @@ export type Escrowly = {
               },
               {
                 "kind": "account",
-                "path": "escrow.seed",
+                "path": "escrow.mint",
+                "account": "escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.sender",
+                "account": "escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.intermediary",
+                "account": "escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.receiver",
                 "account": "escrow"
               }
             ]
           }
-        },
-        {
-          "name": "signer",
-          "signer": true
         }
       ],
       "args": [
@@ -327,6 +357,18 @@ export type Escrowly = {
           "name": "sender",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "intermediary",
+          "docs": [
+            "The intermediary’s public key (passed in by the sender)."
+          ]
+        },
+        {
+          "name": "receiver",
+          "docs": [
+            "The receiver’s public key (passed in by the sender)."
+          ]
         },
         {
           "name": "mint",
@@ -425,18 +467,6 @@ export type Escrowly = {
           }
         },
         {
-          "name": "intermediary",
-          "docs": [
-            "The intermediary’s public key (passed in by the sender)."
-          ]
-        },
-        {
-          "name": "receiver",
-          "docs": [
-            "The receiver’s public key (passed in by the sender)."
-          ]
-        },
-        {
           "name": "escrow",
           "writable": true,
           "pda": {
@@ -452,8 +482,20 @@ export type Escrowly = {
                 ]
               },
               {
-                "kind": "arg",
-                "path": "seed"
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "account",
+                "path": "sender"
+              },
+              {
+                "kind": "account",
+                "path": "intermediary"
+              },
+              {
+                "kind": "account",
+                "path": "receiver"
               }
             ]
           }
@@ -563,10 +605,6 @@ export type Escrowly = {
       ],
       "args": [
         {
-          "name": "seed",
-          "type": "u64"
-        },
-        {
           "name": "senderAmount",
           "type": "u64"
         },
@@ -611,7 +649,22 @@ export type Escrowly = {
               },
               {
                 "kind": "account",
-                "path": "escrow.seed",
+                "path": "escrow.mint",
+                "account": "escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.sender",
+                "account": "escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.intermediary",
+                "account": "escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.receiver",
                 "account": "escrow"
               }
             ]
@@ -850,10 +903,6 @@ export type Escrowly = {
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "seed",
-            "type": "u64"
-          },
           {
             "name": "bump",
             "type": "u8"

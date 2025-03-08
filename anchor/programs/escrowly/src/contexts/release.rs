@@ -20,7 +20,13 @@ pub struct Release<'info> {
     pub caller: Signer<'info>,
     #[account(
         mut,
-        seeds = [b"state", escrow.seed.to_le_bytes().as_ref()],
+        seeds = [
+            b"state",
+            escrow.mint.key().as_ref(),
+            escrow.sender.key().as_ref(),
+            escrow.intermediary.key().as_ref(),
+            escrow.receiver.key().as_ref(),
+        ],
         bump = escrow.bump
     )]
     pub escrow: Account<'info, Escrow>,
@@ -57,9 +63,14 @@ impl<'info> Release<'info> {
         }
         self.escrow.is_release_initiated = true;
 
+        // Derive the signer seeds based on the new PDA derivation:
+        // [b"escrow", sender, intermediary, receiver, bump]
         let signer_seeds: &[&[u8]] = &[
             b"state",
-            &self.escrow.seed.to_le_bytes(),
+            self.escrow.mint.as_ref(),
+            self.escrow.sender.as_ref(),
+            self.escrow.intermediary.as_ref(),
+            self.escrow.receiver.as_ref(),
             &[self.escrow.bump],
         ];
 

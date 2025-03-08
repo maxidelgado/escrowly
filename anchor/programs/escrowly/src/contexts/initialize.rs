@@ -7,10 +7,17 @@ use anchor_spl::{
 use crate::states::Escrow;
 
 #[derive(Accounts)]
-#[instruction(seed: u64, sender_amount: u64, deadline: i64)]
+#[instruction(sender_amount: u64, deadline: i64)]
 pub struct Initialize<'info> {
     #[account(mut)]
     pub sender: Signer<'info>,
+    /// The intermediary’s public key (passed in by the sender).
+    /// CHECK: Not reading or writing data.
+    pub intermediary: AccountInfo<'info>,
+    /// The receiver’s public key (passed in by the sender).
+    /// CHECK: Not reading or writing data.
+    pub receiver: AccountInfo<'info>,
+
     /// The USDT mint.
     pub mint: Account<'info, Mint>,
     #[account(
@@ -21,18 +28,17 @@ pub struct Initialize<'info> {
     )]
     pub sender_ata: Account<'info, TokenAccount>,
 
-    /// The intermediary’s public key (passed in by the sender).
-    /// CHECK: Not reading or writing data.
-    pub intermediary: AccountInfo<'info>,
-    /// The receiver’s public key (passed in by the sender).
-    /// CHECK: Not reading or writing data.
-    pub receiver: AccountInfo<'info>,
-
     #[account(
         init_if_needed,
         payer = sender,
         space = Escrow::INIT_SPACE,
-        seeds = [b"state".as_ref(), &seed.to_le_bytes()],
+        seeds = [
+          b"state",
+          mint.key().as_ref(),
+          sender.key().as_ref(),
+          intermediary.key().as_ref(),
+          receiver.key().as_ref()
+        ],
         bump
     )]
     pub escrow: Account<'info, Escrow>,
@@ -53,13 +59,11 @@ pub struct Initialize<'info> {
 impl<'info> Initialize<'info> {
     pub fn initialize_escrow(
         &mut self,
-        seed: u64,
         bumps: &InitializeBumps, // assume this helper exists
         sender_amount: u64,
         deadline: i64,
     ) -> Result<()> {
         self.escrow.set_inner(Escrow {
-            seed,
             bump: bumps.escrow,
             sender: self.sender.key(),
             intermediary: self.intermediary.key(),

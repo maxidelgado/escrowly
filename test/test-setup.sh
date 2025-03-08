@@ -107,8 +107,11 @@ function airdrop_accounts() {
 function print_balances() {
   echo "📊 Wallet balances:"
   echo "Sender: $(solana balance $SENDER_PUBKEY)"
+  echo "Sender ATA: $(spl-token balance $MINT_ADDRESS --owner $SENDER_PUBKEY)"
   echo "Intermediary: $(solana balance $INTERMEDIARY_PUBKEY)"
+  echo "Intermediary ATA: $(spl-token balance $MINT_ADDRESS --owner $INTERMEDIARY_PUBKEY)"
   echo "Receiver: $(solana balance $RECEIVER_PUBKEY)"
+  echo "Receiver ATA: $(spl-token balance $MINT_ADDRESS --owner $RECEIVER_PUBKEY)"
 }
 
 ############################################
@@ -122,7 +125,6 @@ function create_token_mint() {
   else
     echo "🪙 Creating new token mint..."
     # Generate a keypair for the mint and save to token.json
-    spl-token create-token --output json | jq -r '.commandOutput.address' > token.json
     solana-keygen new --outfile mint_authority.json --silent
     # Use the generated keypair as the mint authority to create the mint
     spl-token create-token --mint-authority mint_authority.json --output json > token.json

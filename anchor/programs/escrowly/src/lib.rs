@@ -15,11 +15,10 @@ pub mod escrowly {
     // and defining the intermediary and receiver.
     pub fn initialize(
         ctx: Context<Initialize>,
-        seed: u64,
         sender_amount: u64,
         deadline: i64,
     ) -> Result<()> {
-        ctx.accounts.initialize_escrow(seed, &ctx.bumps, sender_amount, deadline)?;
+        ctx.accounts.initialize_escrow(&ctx.bumps, sender_amount, deadline)?;
         ctx.accounts.deposit(sender_amount)
     }
 

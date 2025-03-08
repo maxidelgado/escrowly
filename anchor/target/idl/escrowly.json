@@ -141,7 +141,22 @@
               },
               {
                 "kind": "account",
-                "path": "escrow.seed",
+                "path": "escrow.mint",
+                "account": "Escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.sender",
+                "account": "Escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.intermediary",
+                "account": "Escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.receiver",
                 "account": "Escrow"
               }
             ]
@@ -266,6 +281,10 @@
       ],
       "accounts": [
         {
+          "name": "signer",
+          "signer": true
+        },
+        {
           "name": "escrow",
           "writable": true,
           "pda": {
@@ -282,15 +301,26 @@
               },
               {
                 "kind": "account",
-                "path": "escrow.seed",
+                "path": "escrow.mint",
+                "account": "Escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.sender",
+                "account": "Escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.intermediary",
+                "account": "Escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.receiver",
                 "account": "Escrow"
               }
             ]
           }
-        },
-        {
-          "name": "signer",
-          "signer": true
         }
       ],
       "args": [
@@ -321,6 +351,18 @@
           "name": "sender",
           "writable": true,
           "signer": true
+        },
+        {
+          "name": "intermediary",
+          "docs": [
+            "The intermediary’s public key (passed in by the sender)."
+          ]
+        },
+        {
+          "name": "receiver",
+          "docs": [
+            "The receiver’s public key (passed in by the sender)."
+          ]
         },
         {
           "name": "mint",
@@ -419,18 +461,6 @@
           }
         },
         {
-          "name": "intermediary",
-          "docs": [
-            "The intermediary’s public key (passed in by the sender)."
-          ]
-        },
-        {
-          "name": "receiver",
-          "docs": [
-            "The receiver’s public key (passed in by the sender)."
-          ]
-        },
-        {
           "name": "escrow",
           "writable": true,
           "pda": {
@@ -446,8 +476,20 @@
                 ]
               },
               {
-                "kind": "arg",
-                "path": "seed"
+                "kind": "account",
+                "path": "mint"
+              },
+              {
+                "kind": "account",
+                "path": "sender"
+              },
+              {
+                "kind": "account",
+                "path": "intermediary"
+              },
+              {
+                "kind": "account",
+                "path": "receiver"
               }
             ]
           }
@@ -557,10 +599,6 @@
       ],
       "args": [
         {
-          "name": "seed",
-          "type": "u64"
-        },
-        {
           "name": "sender_amount",
           "type": "u64"
         },
@@ -605,7 +643,22 @@
               },
               {
                 "kind": "account",
-                "path": "escrow.seed",
+                "path": "escrow.mint",
+                "account": "Escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.sender",
+                "account": "Escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.intermediary",
+                "account": "Escrow"
+              },
+              {
+                "kind": "account",
+                "path": "escrow.receiver",
                 "account": "Escrow"
               }
             ]
@@ -844,10 +897,6 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "seed",
-            "type": "u64"
-          },
           {
             "name": "bump",
             "type": "u8"

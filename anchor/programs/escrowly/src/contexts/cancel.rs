@@ -31,9 +31,15 @@ pub struct Cancel<'info> {
         mut,
         has_one = sender,
         has_one = mint,
-        seeds = [b"state", escrow.seed.to_le_bytes().as_ref()],
+        seeds = [
+            b"state",
+            escrow.mint.key().as_ref(),
+            escrow.sender.key().as_ref(),
+            escrow.intermediary.key().as_ref(),
+            escrow.receiver.key().as_ref(),
+        ],
         bump = escrow.bump,
-        close = sender,
+        close = sender
     )]
     pub escrow: Account<'info, Escrow>,
 
@@ -65,9 +71,14 @@ impl<'info> Cancel<'info> {
             return Err(CancelError::PartialConfirmationNotExpired.into());
         }
 
+        // Derive the signer seeds based on the new PDA derivation:
+        // [b"state", sender, intermediary, receiver, bump]
         let signer_seeds: &[&[u8]] = &[
             b"state",
-            &self.escrow.seed.to_le_bytes(),
+            self.escrow.mint.as_ref(),
+            self.escrow.sender.as_ref(),
+            self.escrow.intermediary.as_ref(),
+            self.escrow.receiver.as_ref(),
             &[self.escrow.bump],
         ];
 
