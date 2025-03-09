@@ -888,13 +888,13 @@ export type Escrowly = {
   "errors": [
     {
       "code": 6000,
-      "name": "releaseAlreadyInitiated",
-      "msg": "Cannot cancel escrow because the release process has already been initiated."
+      "name": "unauthorized",
+      "msg": "Unauthorized signer for confirmation."
     },
     {
       "code": 6001,
-      "name": "partialConfirmationNotExpired",
-      "msg": "Partial confirmation present and deadline not reached; cancellation disallowed."
+      "name": "alreadyConfirmed",
+      "msg": "Confirmation already provided."
     }
   ],
   "types": [

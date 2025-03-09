@@ -13,9 +13,7 @@ const links: { label: string; path: string }[] = [
   { label: 'Account', path: '/account' },
   { label: 'Clusters', path: '/clusters' },
   { label: 'Initialize Escrow', path: '/initialize' },
-  { label: 'Sender', path: '/sender' },
-  { label: 'Intermediary', path: '/intermediary' },
-  { label: 'Receiver', path: '/receiver' },
+  { label: 'List Escrows', path: '/list-escrows' },
 ]
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

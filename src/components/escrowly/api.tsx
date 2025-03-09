@@ -11,6 +11,7 @@ import { useCluster } from '../cluster/cluster-data-access';
 import { useAnchorProvider } from '../solana/solana-provider';
 import { useTransactionToast } from '../ui/ui-layout';
 import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { BN } from 'bn.js';
 
 export function useEscrowlyProgram() {
   const { connection } = useConnection();
@@ -263,6 +264,25 @@ export function useEscrowlyProgram() {
     },
   });
 
+  const userEscrows = useQuery({
+  queryKey: ['user-escrows', publicKey?.toBase58(), { cluster }],
+  enabled: !!publicKey,
+  queryFn: async () => {
+    if (!publicKey) throw new Error('Wallet not connected');
+
+   return [{
+   account: {
+          amount: new BN(123),
+          mint: new PublicKey('5kx6QokDyjn7uHA5DHB19hbJygxwzCbYQ25ZzdZwQEmL'),
+          sender: new PublicKey('GqgLwn6XfEc2RHGC7CRDgxxbRm7ejnwVnAdSddKio667'),
+          intermediary: new PublicKey('AgGaV1PYMERTsSaUHCPD4dGtC29iieNx1pcRgabibcaB'),
+          receiver: new PublicKey('5rtCCBF9weoGp5SjTJCGX7phS9UMTd73aPZhsqpBVkMH'),
+          userRole: 'intermediary'
+        }
+    }]
+  },
+});
+
   return {
     program,
     programId,
@@ -272,6 +292,7 @@ export function useEscrowlyProgram() {
     confirm,
     release,
     cancel,
+    userEscrows,
   };
 }
 

@@ -882,13 +882,13 @@
   "errors": [
     {
       "code": 6000,
-      "name": "ReleaseAlreadyInitiated",
-      "msg": "Cannot cancel escrow because the release process has already been initiated."
+      "name": "Unauthorized",
+      "msg": "Unauthorized signer for confirmation."
     },
     {
       "code": 6001,
-      "name": "PartialConfirmationNotExpired",
-      "msg": "Partial confirmation present and deadline not reached; cancellation disallowed."
+      "name": "AlreadyConfirmed",
+      "msg": "Confirmation already provided."
     }
   ],
   "types": [
