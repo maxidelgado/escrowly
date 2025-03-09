@@ -10,9 +10,9 @@ declare_id!("51Bdk5E5BtZn4YTVewZdPUqhg2uGPjhjbctronfPkHjr");
 #[program]
 pub mod escrowly {
     use super::*;
-
+    
     // The sender initializes the escrow by depositing funds, setting a deadline,
-    // and defining the intermediary and receiver.
+    // and defining the intermediary, receiver, and arbitrator.
     pub fn initialize(
         ctx: Context<Initialize>,
         sender_amount: u64,
@@ -22,17 +22,32 @@ pub mod escrowly {
         ctx.accounts.deposit(sender_amount)
     }
 
-    // Either the intermediary or receiver can confirm their approval.
+    // Confirmation must occur before the deadline.
     pub fn confirm(ctx: Context<Confirm>, role: Role) -> Result<()> {
         ctx.accounts.confirm(role)
     }
 
-    // Once both parties have confirmed, release the funds to the intermediary.
+    // If needed, either party may revoke their confirmation before the deadline.
+    pub fn revoke(ctx: Context<Revoke>, role: Role) -> Result<()> {
+        ctx.accounts.revoke(role)
+    }
+
+    // Any party may trigger a dispute (only allowed in Pending/Confirmed states).
+    pub fn dispute(ctx: Context<Dispute>) -> Result<()> {
+        ctx.accounts.dispute()
+    }
+
+    // Only the designated arbitrator may resolve a dispute.
+    pub fn resolve_dispute(ctx: Context<ResolveDispute>, resolution: DisputeResolution) -> Result<()> {
+        ctx.accounts.resolve_dispute(resolution)
+    }
+
+    // Only the intermediary may trigger the release once both confirmations exist.
     pub fn release(ctx: Context<Release>) -> Result<()> {
         ctx.accounts.release()
     }
 
-    // The sender can cancel (and recover funds) if allowed by the conditions.
+    // The sender may cancel the escrow (if conditions are met) and get a refund.
     pub fn cancel(ctx: Context<Cancel>) -> Result<()> {
         ctx.accounts.refund_and_close_vault()
     }
