@@ -35,8 +35,8 @@ pub struct ResolveDispute<'info> {
     /// CHECK: This account is unchecked because it is only used as the destination for refunded tokens. No sensitive data is read or written.
     #[account(mut)]
     pub sender_wallet: UncheckedAccount<'info>,
-        /// CHECK: This account is unchecked because it is only used as the destination for refunded tokens. No sensitive data is read or written.
     /// Destination for releasing funds to the intermediary.
+    /// CHECK: This account is unchecked because it is only used as the destination for refunded tokens. No sensitive data is read or written.
     #[account(mut)]
     pub intermediary_wallet: UncheckedAccount<'info>,
     #[account(

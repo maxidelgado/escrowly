@@ -36,7 +36,7 @@ pub struct Cancel<'info> {
         associated_token::authority = escrow
     )]
     pub vault: Account<'info, TokenAccount>,
-    pub associated_token_program: Program<'info, anchor_spl::associated_token::AssociatedToken>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
     pub clock: Sysvar<'info, Clock>,
