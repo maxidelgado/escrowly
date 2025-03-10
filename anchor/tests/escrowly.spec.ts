@@ -434,3 +434,227 @@ describe("Cancel Flow", () => {
     });
 })
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Penetration Test Suites
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Penetration Tests", () => {
+  let accounts: ReturnType<typeof createTestAccounts>;
+
+  // Before each penetration test, start with a fresh escrow instance.
+  beforeEach(async () => {
+    accounts = createTestAccounts();
+    await airdropSol(accounts.connection, accounts.sender, accounts.intermediary, accounts.receiver);
+    const tx = await setupMint(accounts.connection, accounts.provider, accounts.mint, accounts.sender);
+    await setupAsociatedTokenAccounts(tx, accounts.provider, accounts.senderAta, accounts.sender, accounts.mint, accounts.intermediaryAta, accounts.intermediary);
+    // Initialize escrow with valid parameters.
+    await initializeEscrow(accounts.program, accounts.sender, accounts.intermediary, accounts.receiver, accounts.arbitrator, accounts.mint, accounts.senderAta, accounts.escrowPDA, accounts.vault);
+  });
+
+  describe("Unauthorized Access", () => {
+    it("Should reject escrow initialization from an unauthorized sender", async () => {
+      const fakeSender = Keypair.generate();
+      try {
+        await accounts.program.methods
+          .initialize(new anchor.BN(1e6), new anchor.BN(Math.floor(Date.now() / 1000) + 60))
+          .accountsStrict({
+            sender: fakeSender.publicKey, // Not the legitimate sender.
+            intermediary: accounts.intermediary.publicKey,
+            receiver: accounts.receiver.publicKey,
+            arbitrator: accounts.arbitrator.publicKey,
+            mint: accounts.mint.publicKey,
+            senderAta: accounts.senderAta, // ATA does not belong to fakeSender.
+            escrow: accounts.escrowPDA,
+            vault: accounts.vault,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([fakeSender])
+          .rpc();
+        throw new Error("Unauthorized initialization did not fail as expected");
+      } catch (err) {
+        console.log("Unauthorized initialization rejected as expected:", err);
+      }
+    });
+
+    it("Should reject confirmation from an unauthorized party", async () => {
+      try {
+        // Sender trying to confirm as intermediary.
+        await accounts.program.methods
+          .confirm({ intermediary: {} })
+          .accountsStrict({
+            escrow: accounts.escrowPDA,
+            signer: accounts.sender.publicKey, // Incorrect signer.
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+          })
+          .signers([accounts.sender])
+          .rpc();
+        throw new Error("Unauthorized confirmation did not fail as expected");
+      } catch (err) {
+        console.log("Unauthorized confirmation rejected as expected:", err);
+      }
+    });
+
+    it("Should reject cancellation from an unauthorized party", async () => {
+      try {
+        // Intermediary (instead of sender) attempting to cancel.
+        await accounts.program.methods
+          .cancel()
+          .accountsStrict({
+            sender: accounts.sender.publicKey,
+            mint: accounts.mint.publicKey,
+            senderAta: accounts.senderAta,
+            escrow: accounts.escrowPDA,
+            vault: accounts.vault,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+          })
+          .signers([accounts.intermediary])
+          .rpc();
+        throw new Error("Unauthorized cancellation did not fail as expected");
+      } catch (err) {
+        console.log("Unauthorized cancellation rejected as expected:", err);
+      }
+    });
+  });
+
+  describe("Edge Case Parameters", () => {
+    it("Should fail to initialize escrow with a past deadline", async () => {
+      const pastDeadline = Math.floor(Date.now() / 1000) - 10;
+      const newAccounts = createTestAccounts();
+      await airdropSol(newAccounts.connection, newAccounts.sender, newAccounts.intermediary, newAccounts.receiver);
+      const tx = await setupMint(newAccounts.connection, newAccounts.provider, newAccounts.mint, newAccounts.sender);
+      await setupAsociatedTokenAccounts(tx, newAccounts.provider, newAccounts.senderAta, newAccounts.sender, newAccounts.mint, newAccounts.intermediaryAta, newAccounts.intermediary);
+      try {
+        await newAccounts.program.methods
+          .initialize(new anchor.BN(1e6), new anchor.BN(pastDeadline))
+          .accountsStrict({
+            sender: newAccounts.sender.publicKey,
+            intermediary: newAccounts.intermediary.publicKey,
+            receiver: newAccounts.receiver.publicKey,
+            arbitrator: newAccounts.arbitrator.publicKey,
+            mint: newAccounts.mint.publicKey,
+            senderAta: newAccounts.senderAta,
+            escrow: newAccounts.escrowPDA,
+            vault: newAccounts.vault,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([newAccounts.sender])
+          .rpc();
+        throw new Error("Initialization with past deadline did not fail as expected");
+      } catch (err) {
+        console.log("Initialization with past deadline rejected as expected:", err);
+      }
+    });
+
+    it("Should fail to initialize escrow with a zero deposit", async () => {
+      const futureDeadline = Math.floor(Date.now() / 1000) + 60;
+      const newAccounts = createTestAccounts();
+      await airdropSol(newAccounts.connection, newAccounts.sender, newAccounts.intermediary, newAccounts.receiver);
+      const tx = await setupMint(newAccounts.connection, newAccounts.provider, newAccounts.mint, newAccounts.sender);
+      await setupAsociatedTokenAccounts(tx, newAccounts.provider, newAccounts.senderAta, newAccounts.sender, newAccounts.mint, newAccounts.intermediaryAta, newAccounts.intermediary);
+      try {
+        await newAccounts.program.methods
+          .initialize(new anchor.BN(0), new anchor.BN(futureDeadline))
+          .accountsStrict({
+            sender: newAccounts.sender.publicKey,
+            intermediary: newAccounts.intermediary.publicKey,
+            receiver: newAccounts.receiver.publicKey,
+            arbitrator: newAccounts.arbitrator.publicKey,
+            mint: newAccounts.mint.publicKey,
+            senderAta: newAccounts.senderAta,
+            escrow: newAccounts.escrowPDA,
+            vault: newAccounts.vault,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+          })
+          .signers([newAccounts.sender])
+          .rpc();
+        throw new Error("Initialization with zero deposit did not fail as expected");
+      } catch (err) {
+        console.log("Initialization with zero deposit rejected as expected:", err);
+      }
+    });
+  });
+
+  describe("Replay and Double-Spend Attacks", () => {
+    it("Should reject double confirmation from the same party", async () => {
+      try {
+        // The intermediary has already confirmed during initialization.
+        // Attempting a second confirmation should be rejected.
+        await accounts.program.methods
+          .confirm({ intermediary: {} })
+          .accountsStrict({
+            escrow: accounts.escrowPDA,
+            signer: accounts.intermediary.publicKey,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+          })
+          .signers([accounts.intermediary])
+          .rpc();
+        throw new Error("Double confirmation did not fail as expected");
+      } catch (err) {
+        console.log("Double confirmation rejected as expected:", err);
+      }
+    });
+  });
+
+  describe("Invalid State Transitions", () => {
+    it("Should reject releasing escrow without required confirmations", async () => {
+      const newAccounts = createTestAccounts();
+      await airdropSol(newAccounts.connection, newAccounts.sender, newAccounts.intermediary, newAccounts.receiver);
+      const tx = await setupMint(newAccounts.connection, newAccounts.provider, newAccounts.mint, newAccounts.sender);
+      await setupAsociatedTokenAccounts(tx, newAccounts.provider, newAccounts.senderAta, newAccounts.sender, newAccounts.mint, newAccounts.intermediaryAta, newAccounts.intermediary);
+      // Initialize escrow without any confirmations.
+      await initializeEscrow(newAccounts.program, newAccounts.sender, newAccounts.intermediary, newAccounts.receiver, newAccounts.arbitrator, newAccounts.mint, newAccounts.senderAta, newAccounts.escrowPDA, newAccounts.vault);
+      try {
+        await newAccounts.program.methods
+          .release()
+          .accountsStrict({
+            caller: newAccounts.intermediary.publicKey,
+            escrow: newAccounts.escrowPDA,
+            intermediaryWallet: newAccounts.intermediary.publicKey,
+            vault: newAccounts.vault,
+            intermediaryAta: newAccounts.intermediaryAta,
+            mint: newAccounts.mint.publicKey,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+          })
+          .signers([newAccounts.intermediary])
+          .rpc();
+        throw new Error("Release escrow without confirmations did not fail as expected");
+      } catch (err) {
+        console.log("Release escrow without confirmations rejected as expected:", err);
+      }
+    });
+
+    it("Should reject cancellation after escrow is released", async () => {
+      // Assuming the escrow was released in the valid flow, cancellation should now be invalid.
+      try {
+        await accounts.program.methods
+          .cancel()
+          .accountsStrict({
+            sender: accounts.sender.publicKey,
+            mint: accounts.mint.publicKey,
+            senderAta: accounts.senderAta,
+            escrow: accounts.escrowPDA,
+            vault: accounts.vault,
+            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+            tokenProgram: TOKEN_PROGRAM_ID,
+            systemProgram: SystemProgram.programId,
+            clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+          })
+          .signers([accounts.sender])
+          .rpc();
+        throw new Error("Cancellation after release did not fail as expected");
+      } catch (err) {
+        console.log("Cancellation after release rejected as expected:", err);
+      }
+    });
+  });
+});
