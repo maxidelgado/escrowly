@@ -8,6 +8,7 @@ export interface EscrowCreateProps {
   mint: string;
   intermediary: string;
   receiver: string;
+  arbitrator: string;
 }
 
 export function EscrowCreate({
@@ -15,6 +16,7 @@ export function EscrowCreate({
   mint,
   intermediary,
   receiver,
+  arbitrator
 }: EscrowCreateProps) {
   const { initialize } = useEscrowlyProgram();
   const [isPending, setIsPending] = useState(false);
@@ -32,6 +34,7 @@ export function EscrowCreate({
         mint,
         intermediary,
         receiver,
+        arbitrator
       });
     } catch (error) {
       console.error('Escrow initialization failed', error);

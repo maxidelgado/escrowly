@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useEscrowlyProgram } from './api';
+import { DisputeResolutionCancel, DisputeResolutionRelease, IntermediaryRole, ReceiverRole, useEscrowlyProgram } from './api';
 
 interface EscrowlyCardProps {
   amount: number;
@@ -9,28 +9,27 @@ interface EscrowlyCardProps {
   sender: string;
   intermediary: string;
   receiver: string;
-  userRole: 'intermediary' | 'receiver' | 'sender';
+  arbitrator: string;
+  userRole: 'arbitrator' | 'intermediary' | 'receiver' | 'sender';
 }
 
-export function EscrowCard({ amount, mint, sender, intermediary, receiver, userRole }: EscrowlyCardProps) {
-  const { confirm, cancel, release } = useEscrowlyProgram();
+export function EscrowCard({ amount, mint, sender, intermediary, receiver, arbitrator, userRole }: EscrowlyCardProps) {
+  const { confirm, cancel, release, revoke, dispute, resolveDispute } = useEscrowlyProgram();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleConfirm = async () => {
     setIsProcessing(true);
     try {
-      let role: 'intermediary' | 'receiver';
-      if (userRole === 'intermediary') {
-        role = 'intermediary';
-      } else {
-        role = 'receiver';
+      let role: IntermediaryRole | ReceiverRole = { intermediary: {} };
+      if (userRole === 'receiver') {
+        role = { receiver: {} };
       }
       await confirm.mutateAsync({
         mint,
         sender,
         intermediary,
         receiver,
-        role,
+        arbitrator,
       });
     } catch (error) {
       console.error(`Confirm as ${userRole} failed`, error);
@@ -47,6 +46,7 @@ export function EscrowCard({ amount, mint, sender, intermediary, receiver, userR
         mint,
         intermediary,
         receiver,
+        arbitrator,
       });
     } catch (error) {
       console.error('Cancel escrow failed', error);
@@ -62,9 +62,60 @@ export function EscrowCard({ amount, mint, sender, intermediary, receiver, userR
         mint,
         sender,
         receiver,
+        arbitrator,
       });
     } catch (error) {
       console.error('Release escrow failed', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleRevoke = async () => {
+    if (!window.confirm('Are you sure you want to revoke this escrow?')) return;
+    setIsProcessing(true);
+    try {
+      await revoke.mutateAsync({
+        mint,
+        intermediary,
+        receiver,
+        arbitrator,
+      });
+    } catch (error) {
+      console.error('Cancel escrow failed', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleDispute = async () => {
+    setIsProcessing(true);
+    try {
+      await dispute.mutateAsync({
+        mint,
+        intermediary,
+        receiver,
+        arbitrator,
+      });
+    } catch (error) {
+      console.error('Dispute escrow failed', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleResolveDispute = async (resolution: DisputeResolutionRelease | DisputeResolutionCancel) => {
+    setIsProcessing(true);
+    try {
+      await resolveDispute.mutateAsync({
+        mint,
+        intermediary,
+        receiver,
+        arbitrator,
+        resolution,
+      });
+    } catch (error) {
+      console.error('Resolve dispute failed', error);
     } finally {
       setIsProcessing(false);
     }
@@ -94,6 +145,26 @@ export function EscrowCard({ amount, mint, sender, intermediary, receiver, userR
           {userRole === 'sender' && (
             <button className="btn btn-secondary btn-outline" onClick={handleCancel} disabled={isProcessing}>
               Cancel Escrow {isProcessing && '...'}
+            </button>
+          )}
+          {userRole === 'intermediary' && (
+            <button className="btn btn-secondary btn-outline" onClick={handleRevoke} disabled={isProcessing}>
+              Revoke Escrow {isProcessing && '...'}
+            </button>
+          )}
+          {userRole === 'intermediary' && (
+            <button className="btn btn-secondary btn-outline" onClick={() => handleDispute()} disabled={isProcessing}>
+              Dispute Escrow {isProcessing && '...'}
+            </button>
+          )}
+          {userRole === 'arbitrator' && (
+            <button className="btn btn-secondary btn-outline" onClick={() => handleResolveDispute({ release: {} })} disabled={isProcessing}>
+              Release in Dispute {isProcessing && '...'}
+            </button>
+          )}
+          {userRole === 'arbitrator' && (
+            <button className="btn btn-secondary btn-outline" onClick={() => handleResolveDispute({ cancel: {} })} disabled={isProcessing}>
+              Cancel in Dispute {isProcessing && '...'}
             </button>
           )}
         </div>

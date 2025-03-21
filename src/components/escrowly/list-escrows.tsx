@@ -11,7 +11,8 @@ export interface EscrowProps {
   sender: string;
   intermediary: string;
   receiver: string;
-  userRole: 'intermediary' | 'receiver' | 'sender';
+  arbitrator: string;
+  userRole: 'arbitrator' | 'intermediary' | 'receiver' | 'sender';
 }
 
 export function ListEscrows() {
@@ -39,6 +40,7 @@ export function ListEscrows() {
     sender: account.sender.toBase58(),
     intermediary: account.intermediary.toBase58(),
     receiver: account.receiver.toBase58(),
+    arbitrator: account.arbitrator.toBase58(),
     userRole: account.sender.equals(publicKey!)
       ? 'sender'
       : account.receiver.equals(publicKey!)
@@ -51,14 +53,14 @@ export function ListEscrows() {
       <div className="grid md:grid-cols-2 gap-4">
         {escrows.map((escrow, idx) => (
           <EscrowCard
-            key={idx}
-            amount={escrow.amount}
-            mint={escrow.mint}
-            sender={escrow.sender}
-            intermediary={escrow.intermediary}
-            receiver={escrow.receiver}
-            userRole={escrow.userRole}
-          />
+                key={idx}
+                amount={escrow.amount}
+                mint={escrow.mint}
+                sender={escrow.sender}
+                intermediary={escrow.intermediary}
+                receiver={escrow.receiver}
+                arbitrator={escrow.arbitrator}
+                userRole={escrow.userRole}/>
         ))}
       </div>
     </div>

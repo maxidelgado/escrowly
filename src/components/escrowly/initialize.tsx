@@ -11,12 +11,13 @@ export default function Initialize() {
   const [mint, setMint] = useState('');
   const [intermediary, setIntermediary] = useState('');
   const [receiver, setReceiver] = useState('');
+  const [arbitrator, setArbitrator] = useState('');
   const [addressesSet, setAddressesSet] = useState(false);
   const [amount, setAmount] = useState(0);
 
   const handleSetAddresses = (e: React.FormEvent) => {
     e.preventDefault();
-    if (mint && intermediary && receiver) {
+    if (mint && intermediary && receiver && arbitrator) {
       setAddressesSet(true);
     } else {
       alert('Please enter all addresses.');
@@ -80,6 +81,19 @@ export default function Initialize() {
             />
           </div>
           <div>
+            <label htmlFor="arbitrator" className="block mb-1">
+              Arbitrator Address
+            </label>
+            <input
+              type="text"
+              id="arbitrator"
+              value={arbitrator}
+              onChange={(e) => setArbitrator(e.target.value)}
+              className="input input-bordered w-full"
+              placeholder="Enter arbitrator address"
+            />
+          </div>
+          <div>
             <label htmlFor="amount" className="block mb-1">
              Amount 
             </label>
@@ -107,7 +121,7 @@ export default function Initialize() {
         subtitle="Initiate an escrow by providing the required details."
       />
       <div className="mt-6">
-        <EscrowCreate amount={amount} mint={mint} intermediary={intermediary} receiver={receiver} />
+        <EscrowCreate amount={amount} mint={mint} intermediary={intermediary} receiver={receiver} arbitrator={arbitrator} />
       </div>
     </div>
   );

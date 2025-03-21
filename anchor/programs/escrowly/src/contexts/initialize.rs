@@ -1,9 +1,9 @@
+use crate::states::{Escrow, EscrowStatus};
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{transfer_checked, Mint, Token, TokenAccount, TransferChecked},
 };
-use crate::states::{Escrow, EscrowStatus};
 
 #[derive(Accounts)]
 #[instruction(sender_amount: u64, deadline: i64)]
@@ -31,7 +31,7 @@ pub struct Initialize<'info> {
     pub sender_ata: Account<'info, TokenAccount>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = sender,
         space = Escrow::INIT_SPACE,
         seeds = [
@@ -47,7 +47,7 @@ pub struct Initialize<'info> {
     pub escrow: Account<'info, Escrow>,
 
     #[account(
-        init,
+        init_if_needed,
         payer = sender,
         associated_token::mint = mint,
         associated_token::authority = escrow
@@ -60,7 +60,12 @@ pub struct Initialize<'info> {
 }
 
 impl<'info> Initialize<'info> {
-    pub fn initialize_escrow(&mut self, bumps: &InitializeBumps,sender_amount: u64, deadline: i64) -> Result<()> {
+    pub fn initialize_escrow(
+        &mut self,
+        bumps: &InitializeBumps,
+        sender_amount: u64,
+        deadline: i64,
+    ) -> Result<()> {
         // Store the bump from the PDA.
         self.escrow.bump = bumps.escrow;
         self.escrow.sender = self.sender.key();
@@ -114,4 +119,3 @@ pub struct InitializeEvent {
     pub amount: u64,
     pub deadline: i64,
 }
-

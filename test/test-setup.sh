@@ -70,7 +70,12 @@ function load_keys() {
   else
     echo "⚠️  receiver_ata.json not found."
   fi
-
+  if [ -f "./arbitrator.json" ]; then
+    ARBITRATOR_PUBKEY=$(solana address -k ./arbitrator.json)
+    echo "✅ Loaded arbitrator: $ARBITRATOR_PUBKEY"
+  else
+    echo "⚠️  arbitrator.json not found."
+  fi
 }
 
 ############################################
@@ -81,14 +86,17 @@ function generate_keys() {
   solana-keygen new --outfile sender.json --silent
   solana-keygen new --outfile intermediary.json --silent
   solana-keygen new --outfile receiver.json --silent
+  solana-keygen new --outfile arbitrator.json --silent
 
   SENDER_PUBKEY=$(solana address -k ./sender.json)
   INTERMEDIARY_PUBKEY=$(solana address -k ./intermediary.json)
   RECEIVER_PUBKEY=$(solana address -k ./receiver.json)
+  ARBITRATOR_PUBKEY=$(solana address -k ./arbitrator.json)
 
   echo "✅ Generated Sender: $SENDER_PUBKEY"
   echo "✅ Generated Intermediary: $INTERMEDIARY_PUBKEY"
   echo "✅ Generated Receiver: $RECEIVER_PUBKEY"
+  echo "✅ Generated Arbitrator: $ARBITRATOR_PUBKEY"
 }
 
 ############################################
@@ -99,6 +107,7 @@ function airdrop_accounts() {
   solana airdrop 10 $SENDER_PUBKEY
   solana airdrop 10 $INTERMEDIARY_PUBKEY
   solana airdrop 10 $RECEIVER_PUBKEY
+  solana airdrop 10 $ARBITRATOR_PUBKEY
 }
 
 ############################################
@@ -112,6 +121,7 @@ function print_balances() {
   echo "Intermediary ATA: $(spl-token balance $MINT_ADDRESS --owner $INTERMEDIARY_PUBKEY)"
   echo "Receiver: $(solana balance $RECEIVER_PUBKEY)"
   echo "Receiver ATA: $(spl-token balance $MINT_ADDRESS --owner $RECEIVER_PUBKEY)"
+  echo "Arbitrator: $(solana balance $ARBITRATOR_PUBKEY)"
 }
 
 ############################################
@@ -209,6 +219,7 @@ function print_summary() {
   echo "Sender: $SENDER_PUBKEY"
   echo "Intermediary: $INTERMEDIARY_PUBKEY"
   echo "Receiver: $RECEIVER_PUBKEY"
+  echo "Arbitrator: $ARBITRATOR_PUBKEY"
   echo "Token mint: $MINT_ADDRESS"
   echo "Sender token account: $SENDER_TOKEN_ACCOUNT"
   echo "Intermediary token account: $INTERMEDIARY_TOKEN_ACCOUNT"
