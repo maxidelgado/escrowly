@@ -344,21 +344,27 @@ export function useEscrowlyProgram() {
     mutationKey: ["escrowly", "revoke", { cluster }],
     mutationFn: async ({
       mint,
+      sender,
       intermediary,
       receiver,
       arbitrator,
     }: {
       mint: string;
+      sender: string;
       intermediary: string;
       receiver: string;
       arbitrator: string;
     }) => {
       if (!publicKey) throw new Error("Wallet not connected");
-      const senderPublicKey = new PublicKey(publicKey);
+      const senderPublicKey = new PublicKey(sender);
       const intermediaryPublicKey = new PublicKey(intermediary);
       const receiverPublicKey = new PublicKey(receiver);
       const mintPublicKey = new PublicKey(mint);
       const arbitratorPublicKey = new PublicKey(arbitrator);
+
+      if (!publicKey.equals(intermediaryPublicKey) && !publicKey.equals(receiverPublicKey)) {
+        throw new Error("You are not the intermediary or receiver");
+      }
 
       const escrowPDA = deriveEscrowPda(
         mintPublicKey,
@@ -397,17 +403,19 @@ export function useEscrowlyProgram() {
     mutationKey: ["escrowly", "dispute", { cluster }],
     mutationFn: async ({
       mint,
+      sender,
       intermediary,
       receiver,
       arbitrator,
     }: {
       mint: string;
+      sender: string;
       intermediary: string;
       receiver: string;
       arbitrator: string;
     }) => {
       if (!publicKey) throw new Error("Wallet not connected");
-      const senderPublicKey = new PublicKey(publicKey);
+      const senderPublicKey = new PublicKey(sender);
       const intermediaryPublicKey = new PublicKey(intermediary);
       const receiverPublicKey = new PublicKey(receiver);
       const mintPublicKey = new PublicKey(mint);
@@ -445,23 +453,29 @@ export function useEscrowlyProgram() {
     mutationKey: ["escrowly", "resolve-dispute", { cluster }],
     mutationFn: async ({
       mint,
+      sender,
       intermediary,
       receiver,
       arbitrator,
       resolution,
     }: {
       mint: string;
+      sender: string;
       intermediary: string;
       receiver: string;
       arbitrator: string;
       resolution: DisputeResolutionCancel | DisputeResolutionRelease;
     }) => {
       if (!publicKey) throw new Error("Wallet not connected");
-      const senderPublicKey = new PublicKey(publicKey);
+      const senderPublicKey = new PublicKey(sender);
       const intermediaryPublicKey = new PublicKey(intermediary);
       const receiverPublicKey = new PublicKey(receiver);
       const mintPublicKey = new PublicKey(mint);
       const arbitratorPublicKey = new PublicKey(arbitrator);
+
+      if (!publicKey.equals(arbitratorPublicKey)) {
+        throw new Error("You are not the arbitrator"); 
+      }
 
       const escrowPDA = deriveEscrowPda(
         mintPublicKey,
@@ -488,7 +502,7 @@ export function useEscrowlyProgram() {
       return await program.methods
         .resolveDispute(resolution)
         .accountsStrict({
-          arbitrator: publicKey,
+          arbitrator: arbitratorPublicKey,
           escrow: escrowPDA,
           vault: vault,
           intermediaryAta: intermediaryAta,
@@ -513,35 +527,36 @@ export function useEscrowlyProgram() {
   });
 
   const userEscrows = useQuery({
-    queryKey: ["user-escrows", publicKey?.toBase58(), { cluster }],
-    enabled: !!publicKey,
-    queryFn: async () => {
-      if (!publicKey) throw new Error("Wallet not connected");
+  queryKey: ["user-escrows", publicKey?.toBase58(), { cluster }],
+  enabled: !!publicKey,
+  queryFn: async () => {
+    if (!publicKey) throw new Error("Wallet not connected");
+    console.log("Fetching escrows for user:", publicKey.toBase58());
 
-      
+    // Fetch all Escrow accounts with a filter by the sender (user)
+    const escrows = await program.account.escrow.all();
 
-      return [
-        {
-          account: {
-            amount: new BN(123),
-            mint: new PublicKey("EmEkRBK4w5biavCxSoHwsjzsd2jFKJniAT4fjT44Psad"),
-            sender: new PublicKey(
-              "7P7UZYQVEYSRL5gDGS3FLuoaKFsJezXqGxP7hK2gdCpW",
-            ),
-            intermediary: new PublicKey(
-              "37tYrUPsXf6ga2QJkY9ruXtKtyqvKwNwaBFoYgigPw9v",
-            ),
-            receiver: new PublicKey(
-              "FcLSXsYTpeQZm98v4YhtKMnQy4MygNsYGQcqa9H6SNK5",
-            ),
-            arbitrator: new PublicKey(
-              "CN78G46SMeupXiSxMG2UkFXDQagzJgKx8mi3412JESDP",
-            ),
-          },
-        },
-      ];
-    },
-  });
+    console.log("Escrows fetched:", escrows);
+
+    // Return data formatted similar to your mocked example
+    return escrows.map((escrow) => ({
+      publicKey: escrow.publicKey,
+      account: {
+        amount: new BN(escrow.account.amount),
+        mint: escrow.account.mint,
+        sender: escrow.account.sender,
+        intermediary: escrow.account.intermediary,
+        receiver: escrow.account.receiver,
+        arbitrator: escrow.account.arbitrator,
+        deadline: new BN(escrow.account.deadline),
+        intermediaryConfirmed: escrow.account.intermediaryConfirmed,
+        receiverConfirmed: escrow.account.receiverConfirmed,
+        status: escrow.account.status,
+        bump: escrow.account.bump,
+      },
+    }));
+  },
+});
 
   return {
     program,

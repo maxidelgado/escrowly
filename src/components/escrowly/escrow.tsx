@@ -27,7 +27,7 @@ export function EscrowCreate({
       // For demo purposes, generate a random seed,
       // fixed sender deadline 60 seconds ahead.
       const senderAmount = amount * 1e9;
-      const deadline = Math.floor(Date.now() / 1000) + 60;
+      const deadline = Math.floor(Date.now() / 1000) + 300;
       await initialize.mutateAsync({
         senderAmount,
         deadline,

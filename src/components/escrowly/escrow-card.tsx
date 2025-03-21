@@ -77,6 +77,7 @@ export function EscrowCard({ amount, mint, sender, intermediary, receiver, arbit
     try {
       await revoke.mutateAsync({
         mint,
+        sender,
         intermediary,
         receiver,
         arbitrator,
@@ -93,6 +94,7 @@ export function EscrowCard({ amount, mint, sender, intermediary, receiver, arbit
     try {
       await dispute.mutateAsync({
         mint,
+        sender,
         intermediary,
         receiver,
         arbitrator,
@@ -109,6 +111,7 @@ export function EscrowCard({ amount, mint, sender, intermediary, receiver, arbit
     try {
       await resolveDispute.mutateAsync({
         mint,
+        sender,
         intermediary,
         receiver,
         arbitrator,

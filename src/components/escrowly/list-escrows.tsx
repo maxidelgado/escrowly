@@ -35,7 +35,7 @@ export function ListEscrows() {
   }
 
   const escrows: EscrowProps[] = userEscrows.data?.map(({ account }) => ({
-    amount: account.amount.toNumber(),
+    amount: account.amount.toNumber() / 1e9,
     mint: account.mint.toBase58(),
     sender: account.sender.toBase58(),
     intermediary: account.intermediary.toBase58(),
@@ -51,7 +51,7 @@ export function ListEscrows() {
   return (
     <div className="space-y-6">
       <div className="grid md:grid-cols-2 gap-4">
-        {escrows.map((escrow, idx) => (
+        {escrows?.map((escrow, idx) => (
           <EscrowCard
                 key={idx}
                 amount={escrow.amount}
