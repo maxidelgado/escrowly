@@ -1,7 +1,7 @@
 'use client';
 
 import { useWallet } from '@solana/wallet-adapter-react';
-import { useEscrowlyProgram } from './api';
+import { EscrowStatus, useEscrowlyProgram, UserRoles } from './api';
 import { EscrowCard } from './escrow-card';
 import { WalletButton } from '../solana/solana-provider';
 
@@ -12,7 +12,11 @@ export interface EscrowProps {
   intermediary: string;
   receiver: string;
   arbitrator: string;
-  userRole: 'arbitrator' | 'intermediary' | 'receiver' | 'sender';
+  userRole: UserRoles;
+  status: EscrowStatus;
+  deadline: number;
+  intermediaryConfirmed: boolean;
+  receiverConfirmed: boolean;
 }
 
 export function ListEscrows() {
@@ -34,8 +38,8 @@ export function ListEscrows() {
     );
   }
 
-  const escrows: EscrowProps[] = userEscrows.data?.map(({ account }) => ({
-    amount: account.amount.toNumber() / 1e9,
+  const escrows: EscrowProps[] = userEscrows.data?.map(account => ({
+    amount: account.amount / 1e9,
     mint: account.mint.toBase58(),
     sender: account.sender.toBase58(),
     intermediary: account.intermediary.toBase58(),
@@ -45,8 +49,12 @@ export function ListEscrows() {
       ? 'sender'
       : account.receiver.equals(publicKey!)
       ? 'receiver'
-      : 'intermediary',
-  })) || [];
+      : account.intermediary.equals(publicKey!)
+      ? 'intermediary'
+      : 'arbitrator',
+    deadline: account.deadline,
+    status: account.status,
+  } as EscrowProps)) || [];
 
   return (
     <div className="space-y-6">
@@ -60,7 +68,9 @@ export function ListEscrows() {
                 intermediary={escrow.intermediary}
                 receiver={escrow.receiver}
                 arbitrator={escrow.arbitrator}
-                userRole={escrow.userRole}/>
+                userRole={escrow.userRole} 
+                status={escrow.status}
+                deadline={escrow.deadline}/>
         ))}
       </div>
     </div>

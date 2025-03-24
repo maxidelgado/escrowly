@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useEscrowlyProgram } from './api';
+import toast from 'react-hot-toast';
 
 export interface EscrowCreateProps {
   amount: number;
@@ -23,21 +24,13 @@ export function EscrowCreate({
 
   const handleInitialize = async () => {
     setIsPending(true);
+    const senderAmount = amount * 1e9;
+    const deadline = Math.floor(Date.now() / 1000) + 300;
     try {
-      // For demo purposes, generate a random seed,
-      // fixed sender deadline 60 seconds ahead.
-      const senderAmount = amount * 1e9;
-      const deadline = Math.floor(Date.now() / 1000) + 300;
-      await initialize.mutateAsync({
-        senderAmount,
-        deadline,
-        mint,
-        intermediary,
-        receiver,
-        arbitrator
-      });
+      await initialize.mutateAsync({ senderAmount, deadline, mint, intermediary, receiver, arbitrator });
+      toast.success('Escrow successfully initialized!');
     } catch (error) {
-      console.error('Escrow initialization failed', error);
+      toast.error('Escrow initialization failed.');
     } finally {
       setIsPending(false);
     }
@@ -45,13 +38,12 @@ export function EscrowCreate({
 
   return (
     <button
-      className="btn btn-xs lg:btn-md btn-primary"
+      className="btn btn-primary w-full"
       onClick={handleInitialize}
       disabled={isPending}
     >
-      Initiate Escrow {isPending && '...'}
+      {isPending ? 'Initializing...' : 'Initiate Escrow'}
     </button>
   );
 }
-
 

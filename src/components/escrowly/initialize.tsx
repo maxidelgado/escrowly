@@ -8,95 +8,55 @@ import { EscrowCreate } from './escrow';
 
 export default function Initialize() {
   const { publicKey } = useWallet();
+  const [step, setStep] = useState(1);
   const [mint, setMint] = useState('');
   const [intermediary, setIntermediary] = useState('');
   const [receiver, setReceiver] = useState('');
   const [arbitrator, setArbitrator] = useState('');
-  const [addressesSet, setAddressesSet] = useState(false);
   const [amount, setAmount] = useState(0);
 
-  const handleSetAddresses = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (mint && intermediary && receiver && arbitrator) {
-      setAddressesSet(true);
-    } else {
-      alert('Please enter all addresses.');
+    if (!mint || !intermediary || !receiver || !arbitrator || !amount) {
+      alert('Fill in all fields');
+      return;
     }
+    setStep(2);
   };
 
   if (!publicKey) {
     return (
-      <div className="max-w-4xl mx-auto">
-        <div className="hero py-[64px]">
-          <div className="hero-content text-center">
-            <WalletButton />
-          </div>
-        </div>
+      <div className="flex justify-center items-center min-h-screen">
+        <WalletButton />
       </div>
     );
   }
 
-  if (!addressesSet) {
+  if (step === 1) {
     return (
-      <div className="max-w-xl mx-auto mt-8">
-        <h2 className="text-2xl mb-4">Sender: Enter Escrow Details</h2>
-        <form onSubmit={handleSetAddresses} className="space-y-4">
+      <div className="max-w-xl mx-auto mt-10 space-y-6">
+        <h2 className="text-2xl font-semibold">Initialize a New Escrow</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {[
+            { id: 'mint', label: 'Mint Address', state: mint, set: setMint },
+            { id: 'intermediary', label: 'Intermediary', state: intermediary, set: setIntermediary },
+            { id: 'receiver', label: 'Receiver', state: receiver, set: setReceiver },
+            { id: 'arbitrator', label: 'Arbitrator', state: arbitrator, set: setArbitrator },
+          ].map(({ id, label, state, set }) => (
+            <div key={id}>
+              <label htmlFor={id} className="block font-medium mb-1">{label}</label>
+              <input
+                type="text"
+                id={id}
+                value={state}
+                onChange={(e) => set(e.target.value)}
+                className="input input-bordered w-full"
+                placeholder={`Enter ${label.toLowerCase()}`}
+              />
+            </div>
+          ))}
           <div>
-            <label htmlFor="mint" className="block mb-1">
-              Mint Address
-            </label>
-            <input
-              type="text"
-              id="mint"
-              value={mint}
-              onChange={(e) => setMint(e.target.value)}
-              className="input input-bordered w-full"
-              placeholder="Enter mint address"
-            />
-          </div>
-          <div>
-            <label htmlFor="intermediary" className="block mb-1">
-              Intermediary Address
-            </label>
-            <input
-              type="text"
-              id="intermediary"
-              value={intermediary}
-              onChange={(e) => setIntermediary(e.target.value)}
-              className="input input-bordered w-full"
-              placeholder="Enter intermediary address"
-            />
-          </div>
-          <div>
-            <label htmlFor="receiver" className="block mb-1">
-              Receiver Address
-            </label>
-            <input
-              type="text"
-              id="receiver"
-              value={receiver}
-              onChange={(e) => setReceiver(e.target.value)}
-              className="input input-bordered w-full"
-              placeholder="Enter receiver address"
-            />
-          </div>
-          <div>
-            <label htmlFor="arbitrator" className="block mb-1">
-              Arbitrator Address
-            </label>
-            <input
-              type="text"
-              id="arbitrator"
-              value={arbitrator}
-              onChange={(e) => setArbitrator(e.target.value)}
-              className="input input-bordered w-full"
-              placeholder="Enter arbitrator address"
-            />
-          </div>
-          <div>
-            <label htmlFor="amount" className="block mb-1">
-             Amount 
-            </label>
+            <label htmlFor="amount" className="block font-medium mb-1">Amount (SOL)</label>
             <input
               type="number"
               id="amount"
@@ -104,25 +64,27 @@ export default function Initialize() {
               onChange={(e) => setAmount(Number(e.target.value))}
               className="input input-bordered w-full"
               placeholder="Enter amount"
+              min={0}
             />
           </div>
-          <button type="submit" className="btn btn-primary">
-            Initialize 
-          </button>
+          <button type="submit" className="btn btn-primary w-full">Continue</button>
         </form>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto mt-8">
-      <AppHero
-        title="Sender Page"
-        subtitle="Initiate an escrow by providing the required details."
-      />
-      <div className="mt-6">
-        <EscrowCreate amount={amount} mint={mint} intermediary={intermediary} receiver={receiver} arbitrator={arbitrator} />
+    <div className="max-w-2xl mx-auto mt-10 space-y-6">
+      <AppHero title="Confirm Details" subtitle="Click to initiate your escrow transaction." />
+      <div className="bg-base-200 p-6 rounded-lg space-y-4 text-sm">
+        <div><strong>Mint:</strong> {mint}</div>
+        <div><strong>Intermediary:</strong> {intermediary}</div>
+        <div><strong>Receiver:</strong> {receiver}</div>
+        <div><strong>Arbitrator:</strong> {arbitrator}</div>
+        <div><strong>Amount:</strong> {amount} SOL</div>
       </div>
+      <EscrowCreate amount={amount} mint={mint} intermediary={intermediary} receiver={receiver} arbitrator={arbitrator} />
+      <button onClick={() => setStep(1)} className="link mt-4 text-sm">Edit details</button>
     </div>
   );
 }
